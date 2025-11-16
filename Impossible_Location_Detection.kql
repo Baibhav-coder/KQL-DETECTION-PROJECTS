@@ -1,0 +1,21 @@
+﻿let SigninLogs = datatable(User:string, IP:string, Result:string, Location:string, Time:datetime)
+[
+    "Baibhav", "10.11.1.1", "Success", "Ireland", datetime(2025-01-01T09:00:00),
+    "VEECEE", "88.22.33.10", "Failed", "India", datetime(2025-01-01T10:00:00),
+    "Cristiano Ronaldo", "55.44.33.11", "Success", "Portugal", datetime(2025-01-01T08:30:00),
+    "VEECEE", "102.31.4.77", "Success", "Brazil", datetime(2025-01-01T10:03:00),
+    "Lana Del Rey", "66.12.32.90", "Success", "USA", datetime(2025-01-01T07:00:00),
+    "Trump", "43.22.11.90", "Success", "USA", datetime(2025-01-01T11:00:00),
+    "VEECEE", "22.45.91.2", "Success", "China", datetime(2025-01-01T10:05:00),
+    "Sylvester Stallone", "39.55.22.77", "Failed", "USA", datetime(2025-01-01T06:40:00),
+    "Messi", "22.22.22.22", "Success", "Argentina", datetime(2025-01-01T10:00:00),
+    "Lana Del Rey", "66.12.32.90", "Success", "USA", datetime(2025-01-01T07:20:00),
+    "Trump", "43.22.11.90", "Success", "USA", datetime(2025-01-01T11:15:00),
+    "Cristiano Ronaldo", "55.44.33.11", "Success", "Portugal", datetime(2025-01-01T09:00:00)
+];
+SigninLogs 
+| order by User asc , Time asc // Ordering the logs by user and time in ascending order
+| extend PrevLoc = iif (User == prev(User),prev(Location),"") // Checking for the user and mapping the previous Login location 
+| extend PrevTime = iif ( User ==prev(User), prev (Time), datetime(null))// Checking for the user and mapping the previous Login time
+| extend TimeDur = iif(isnull( PrevTime), 0, datetime_diff('minute',Time,PrevTime)) // calclating the time between previous log in time and latest login time 
+| where PrevLoc != "" and Location != PrevLoc and TimeDur <= 5 // Condition for checking difference in log in location and time 
