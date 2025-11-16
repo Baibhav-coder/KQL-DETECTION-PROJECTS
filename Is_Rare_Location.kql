@@ -1,0 +1,27 @@
+﻿let SigninLogs = datatable(User:string, Location:string, Time:datetime)
+[
+    "Baibhav", "India", datetime(2025-01-01T09:00:00),
+    "Cristiano Ronaldo", "Italy", datetime(2025-01-01T09:10:00),
+    "Messi", "Pakistan", datetime(2025-01-01T09:20:00),
+    "Lana Del Rey", "India", datetime(2025-01-01T09:30:00),
+    "VEECEE", "Italy", datetime(2025-01-01T09:40:00),
+    "Baibhav", "India", datetime(2025-01-02T10:00:00),
+    "Cristiano Ronaldo", "Italy", datetime(2025-01-02T10:05:00),
+    "Messi", "Pakistan", datetime(2025-01-02T10:10:00),
+    "Lana Del Rey", "India", datetime(2025-01-02T10:15:00),
+    "VEECEE", "Italy", datetime(2025-01-02T10:20:00),
+    "Michael", "Russia", datetime(2025-01-01T11:00:00),
+    "Baibhav", "Pakistan", datetime(2025-01-03T08:00:00),
+    "Cristiano Ronaldo", "India", datetime(2025-01-03T08:05:00),
+    "Messi", "Italy", datetime(2025-01-03T08:10:00),
+    "Lana Del Rey", "Pakistan", datetime(2025-01-03T08:15:00),
+    "Michael", "Italy", datetime(2025-01-03T09:00:00),
+    "Michael", "India", datetime(2025-01-03T09:10:00),
+    "Michael", "Pakistan", datetime(2025-01-03T09:15:00)
+];
+SigninLogs
+| order  by User asc , Time asc
+| extend PrevLoc = iif(User == prev(User),prev(Location),"")
+| extend IsRare = iif(PrevLoc == "" or Location == PrevLoc,0,1)
+| where IsRare ==1 
+| project User, Time,Location, PrevLoc,IsRare
