@@ -74,6 +74,7 @@ Mark it as rare if:
 It is not the user’s first login
 
 The location has changed from their earlier history
+
 -----------------------------------------------------------------------------------------------
 🛡 MITRE ATT&CK Mapping
 
@@ -108,6 +109,7 @@ Automated bot-driven authentication attempts
 Adversaries performing broad login enumeration
 
 Once combined with a successful login, it becomes a high-confidence compromise alert.
+
 -----------------------------------------------------------------------------------------------
 
 📌 Detection Logic
@@ -139,6 +141,7 @@ Flag if the success occurred within 0–5 minutes, indicating compromise
 Produce a summary report of attacker activity
 
 This correlates spray → success → time window to identify true compromises.
+
 -----------------------------------------------------------------------------------------------
 🛡 MITRE ATT&CK Mapping
 
