@@ -163,3 +163,66 @@ This correlates spray → success → time window to identify true compromises.
 
 
 -----------------------------------------------------------------------------------------------
+#4.OAuth Token Misuse Detection (KQL)
+
+This project detects OAuth Token Misuse / Token Hijacking using Kusto Query Language (KQL).
+OAuth token misuse occurs when a stolen or compromised token is used from different geographic locations or IP addresses within a short time window — something a legitimate user cannot physically do.
+
+This type of anomaly is commonly used in SOC environments to detect:
+
+OAuth token theft
+
+Session hijacking
+
+Attacker reusing stolen bearer tokens
+
+API abuse
+
+Impossible OAuth travel
+
+Multi-country token replay
+
+-----------------------------------------------------------------------------------------------
+
+📌 Detection Logic
+
+The logic for OAuth token misuse is based on analyzing how a single token is used over time:
+
+Identify tokens used from multiple IP addresses
+
+Identify tokens used from multiple geographic locations
+
+Reconstruct the timeline of each token’s activity
+
+Capture the previous location for each token
+
+Capture the previous usage time
+
+Calculate the time difference between the two uses
+
+Flag the event if:
+
+The location changed
+
+And the time difference is < 5 minutes
+
+Meaning the token was used in a physically impossible way
+
+Strong indicator of token theft or hijacking
+
+-----------------------------------------------------------------------------------------------
+
+🛡 MITRE ATT&CK Mapping
+
+| ID        | Technique                    |
+| --------- | ---------------------------- |
+| **T1078** | Valid Accounts               |
+| **T1539** | Steal Web Session Cookie     |
+| **T1550** | Use of Authentication Tokens |
+| **T1556** | Authentication Abuse         |
+
+-----------------------------------------------------------------------------------------------
+🧠 KQL Query Output
+
+<img width="1552" height="401" alt="image" src="https://github.com/user-attachments/assets/a5d8e424-17da-4350-8715-ee3d5820b9c6" />
+
