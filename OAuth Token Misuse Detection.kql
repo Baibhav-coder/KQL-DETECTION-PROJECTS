@@ -1,0 +1,40 @@
+﻿let OAuthTokenLogs = datatable(User:string, AppId:string, IP:string, Location:string, TokenId:string, Event:string, Time:datetime)
+[
+    "asad", "app123", "10.1.1.1", "Ireland",  "tokenA", "Issued", datetime(2025-01-01T09:00:00),
+    "asad", "app123", "10.1.1.1", "Ireland",  "tokenA", "Used",   datetime(2025-01-01T09:10:00),
+    "asad", "app123", "10.1.1.1", "Ireland",  "tokenA", "Used",   datetime(2025-01-01T12:00:00),
+    "john", "crm77",  "22.45.91.2",  "India",   "tokenX", "Issued", datetime(2025-01-01T10:00:00),
+    "john", "crm77",  "22.45.91.2",  "India",   "tokenX", "Used",   datetime(2025-01-01T10:02:00),
+    "john", "crm77",  "45.22.90.10", "Brazil",  "tokenX", "Used",   datetime(2025-01-01T10:05:00),
+    "john", "crm77",  "71.22.14.3",  "USA",     "tokenX", "Used",   datetime(2025-01-01T10:07:00),
+    "john", "crm77",  "88.19.23.5",  "Germany", "tokenX", "Used",   datetime(2025-01-01T10:10:00),
+    "katie","mail88", "88.19.23.5",  "USA",     "tokenZ", "Issued", datetime(2025-01-01T15:00:00),
+    "katie","mail88", "88.19.23.5",  "USA",     "tokenZ", "Used",   datetime(2025-01-01T15:05:00),
+    "katie","mail88", "101.22.45.2", "UK",      "tokenZ", "Used",   datetime(2025-01-01T16:00:00),
+    "alice","drive12","44.17.19.8",  "France",  "tokenQ", "Issued", datetime(2025-01-02T08:00:00),
+    "alice","drive12","44.17.19.8",  "France",  "tokenQ", "Used",   datetime(2025-01-02T08:02:00),
+    "alice","drive12","52.13.77.1",  "Japan",   "tokenQ", "Used",   datetime(2025-01-02T08:06:00),
+    "alice","drive12","18.9.11.5",   "Canada",  "tokenQ", "Used",   datetime(2025-01-02T08:09:00),
+    "mike", "finance9","10.2.2.2",   "Ireland", "tokenM", "Issued", datetime(2025-01-03T11:00:00),
+    "mike", "finance9","10.2.2.2",   "Ireland", "tokenM", "Used",   datetime(2025-01-03T11:05:00),
+    "mike", "finance9","201.18.55.1","Brazil",  "tokenM", "Used",   datetime(2025-01-03T11:06:00),
+    "mike", "finance9","201.18.55.1","Brazil",  "tokenM", "Used",   datetime(2025-01-03T11:06:30)
+];
+let SuspiciousToken=
+OAuthTokenLogs
+|where Event =="Used"// Only investigate tokens that were actually used
+|summarize Unilocation=dcount(Location), // Count unique locations per token
+UniqueIP = dcount(IP) by TokenId // Count unique IPs per token
+| where Unilocation >= 2 and UniqueIP >= 2 // Filtering the suspicious Tokens
+| order by TokenId; // Sort for readability
+SuspiciousToken // Store this as SuspiciousToken
+| join kind=inner (OAuthTokenLogs | where Event == "Used") on TokenId// Bring back full login events for risky tokens
+| order by TokenId, Time asc // Putting in chronological order 
+|serialize //  Freeze row order so prev() works correctly
+| extend PrevLoc= iif (TokenId == prev(TokenId),prev(Location),""),// Determining Previous Location
+ PrevTime= iif(TokenId == prev(TokenId),prev(Time),datetime(null))// Determining previous Time
+|extend TimeDIfference = datetime_diff('minute',Time,PrevTime) // How fast the token switched between locations
+| where Location != PrevLoc and TimeDIfference < 5 // Keep token that jumped to a new location and did so with in 5 mins
+| extend LocationJump = strcat(PrevLoc, " ➝ ", Location)// Location Jumped
+| project TokenId,Unilocation,UniqueIP,TimeDIfference,LocationJump // Projecting the necessary details for further investigation
+
