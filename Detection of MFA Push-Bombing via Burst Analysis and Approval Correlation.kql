@@ -1,0 +1,60 @@
+﻿let MFALogs=datatable(User:string,IP:string,Location:string,Event:string,Time:datetime)
+[
+"john","22.45.91.2","India","MFA_Challenge",datetime(2025-01-03T10:00:00),
+"john","22.45.91.2","India","MFA_Challenge",datetime(2025-01-03T10:00:20),
+"john","45.22.90.10","Brazil","MFA_Challenge",datetime(2025-01-03T10:00:40),
+"john","45.22.90.10","Brazil","MFA_Challenge",datetime(2025-01-03T10:01:00),
+"john","71.22.14.3","USA","MFA_Challenge",datetime(2025-01-03T10:01:20),
+"john","71.22.14.3","USA","MFA_Challenge",datetime(2025-01-03T10:01:40),
+"john","88.19.23.5","Germany","MFA_Challenge",datetime(2025-01-03T10:02:00),
+"john","88.19.23.5","Germany","MFA_Challenge",datetime(2025-01-03T10:02:20),
+"john","88.19.23.5","Germany","MFA_Success",datetime(2025-01-03T10:02:30),
+"katie","201.18.55.1","Brazil","MFA_Challenge",datetime(2025-01-03T11:00:00),
+"katie","201.18.55.1","Brazil","MFA_Challenge",datetime(2025-01-03T11:00:20),
+"katie","201.18.55.1","Brazil","MFA_Challenge",datetime(2025-01-03T11:00:40),
+"katie","101.22.45.2","UK","MFA_Challenge",datetime(2025-01-03T11:01:00),
+"katie","101.22.45.2","UK","MFA_Challenge",datetime(2025-01-03T11:01:20),
+"katie","101.22.45.2","UK","MFA_Challenge",datetime(2025-01-03T11:01:40),
+"katie","88.19.23.5","USA","MFA_Challenge",datetime(2025-01-03T11:02:00),
+"alice","18.9.11.5","Canada","MFA_Challenge",datetime(2025-01-04T09:00:00),
+"alice","18.9.11.5","Canada","MFA_Challenge",datetime(2025-01-04T09:00:20),
+"alice","18.9.11.5","Canada","MFA_Challenge",datetime(2025-01-04T09:00:40),
+"alice","18.9.11.5","Canada","MFA_Denied",datetime(2025-01-04T09:01:00),
+"alice","18.9.11.5","Canada","MFA_Denied",datetime(2025-01-04T09:01:20),
+"alice","18.9.11.5","Canada","MFA_Denied",datetime(2025-01-04T09:01:40),
+"alice","18.9.11.5","Canada","MFA_Denied",datetime(2025-01-04T09:02:00),
+"mike","10.2.2.2","Ireland","MFA_Challenge",datetime(2025-01-05T11:00:00),
+"mike","10.2.2.2","Ireland","MFA_Success",datetime(2025-01-05T11:01:00),
+"rob","77.33.18.5","Italy","MFA_Challenge",datetime(2025-01-06T14:00:00),
+"rob","77.33.18.5","Italy","MFA_Challenge",datetime(2025-01-06T14:00:20),
+"rob","199.10.44.1","Germany","MFA_Challenge",datetime(2025-01-06T14:00:40),
+"rob","199.10.44.1","Germany","MFA_Challenge",datetime(2025-01-06T14:01:00),
+"rob","199.10.44.1","Germany","MFA_Challenge",datetime(2025-01-06T14:01:20),
+"rob","80.14.90.3","France","MFA_Challenge",datetime(2025-01-06T14:01:40),
+"rob","80.14.90.3","France","MFA_Challenge",datetime(2025-01-06T14:02:00)
+];
+// Creating a table with only successfull MFA
+let Success_Events = MFALogs
+| where Event == "MFA_Success"
+| project User, SuccessTime = Time, SuccessIP = IP, SuccessLoc = Location;
+// Taking only the "MFA_Challange" Event into consideration.
+MFALogs
+|where Event == "MFA_Challenge"
+| sort by User, Time asc
+| serialize 
+| summarize MFA_BURST = count(Event),// Burst of "MFA_Challenges" in a time frame
+UNI_LOC= dcount(Location), // Unique Location
+UNI_IP= dcount(IP)  by User, 
+bin(Time,5m)// The time frame
+| where MFA_BURST > 5 // Condition for the burst to be validated.
+|where UNI_IP > 1 or UNI_LOC > 1 // Validating number of location and ip for attack
+| extend StartWindow = Time , EndWindow = Time + 5m
+| join kind= inner Success_Events on User
+|where SuccessTime between (StartWindow ..EndWindow )// Keeping only success events that happened inside the spam window
+| project User,StartWindow,EndWindow,MFA_BURST,UNI_IP,UNI_LOC,SuccessTime,SuccessIP,SuccessLoc
+
+
+
+
+
+
