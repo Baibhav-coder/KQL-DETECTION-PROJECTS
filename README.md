@@ -91,7 +91,7 @@ The location has changed from their earlier history
 
 -----------------------------------------------------------------------------------------------
 
-#3.Password Spraying Detection (KQL)
+# 3.Password Spraying Detection (KQL)
 
 This detection identifies password spraying attacks using Kusto Query Language (KQL).
 Password spraying occurs when an attacker attempts the same password against multiple user accounts, avoiding account lockouts and increasing the chance of compromise.
@@ -163,7 +163,7 @@ This correlates spray → success → time window to identify true compromises.
 
 
 -----------------------------------------------------------------------------------------------
-#4.OAuth Token Misuse Detection (KQL)
+# 4.OAuth Token Misuse Detection (KQL)
 
 This project detects OAuth Token Misuse / Token Hijacking using Kusto Query Language (KQL).
 OAuth token misuse occurs when a stolen or compromised token is used from different geographic locations or IP addresses within a short time window — something a legitimate user cannot physically do.
@@ -226,3 +226,61 @@ Strong indicator of token theft or hijacking
 
 <img width="1552" height="401" alt="image" src="https://github.com/user-attachments/assets/a5d8e424-17da-4350-8715-ee3d5820b9c6" />
 
+-------------------------------------------------------------------------------------------------
+
+# 5. Detection of MFA Push-Bombing via Burst Analysis and Approval Correlation (KQL)
+
+This project detects MFA fatigue / push-bombing attacks using Kusto Query Language (KQL).
+Push-bombing occurs when an attacker repeatedly triggers MFA prompts hoping the victim mistakenly approves one, a tactic used in modern breaches including LAPSUS$, Scattered Spider, and multiple access-broker groups.
+
+This detection identifies:
+
+High-frequency MFA challenge bursts
+
+Multiple IP or location origins (botnet or VPN abuse)
+
+MFA approvals occurring inside the burst window
+
+Strong indicators of account compromise
+
+-----------------------------------------------------------------------------------------------
+
+📌 Detection Logic
+
+The logic for detecting MFA fatigue attacks is based on analyzing bursts of MFA challenges:
+
+Count MFA challenges in 5-minute windows
+
+Detect unusual diversity in IP addresses
+
+Detect unusual diversity in geographical locations
+
+Extract the attack window (start and end timestamps)
+
+Correlate with any MFA approval events
+
+Flag the attack if:
+
+The user receives > 5 MFA challenges in 5 minutes
+
+AND the challenges come from multiple IPs or locations
+
+AND an MFA_Success occurs inside the attack window
+
+This represents a high-confidence push-bombing compromise, where the attacker successfully abused MFA fatigue.
+
+🛡 MITRE ATT&CK Mapping
+
+| ID        | Technique                                      |
+| --------- | ---------------------------------------------- |
+| **T1621** | Multi-Factor Authentication Request Generation |
+| **T1078** | Valid Accounts                                 |
+| **T1110** | Brute Force (MFA Push Abuse Variant)           |
+| **T1098** | Account Manipulation                           |
+
+
+-----------------------------------------------------------------------------------------------
+
+🧠 KQL Query Output
+
+<img width="1452" height="152" alt="image" src="https://github.com/user-attachments/assets/992161cf-22b8-4be7-b4ad-dfb1df1f46d6" />
