@@ -1,0 +1,54 @@
+﻿let AuditLogs=datatable(Time:datetime,Actor:string,TargetUser:string,RoleName:string,IP:string,Operation:string)
+[
+datetime(2025-01-03T09:00:00),"security.ops","alice","Security Reader","10.1.2.8","AddMemberToRole",
+datetime(2025-01-03T09:05:00),"security.ops","rob","Security Reader","10.1.2.8","AddMemberToRole",
+datetime(2025-01-03T09:10:00),"security.ops","mark","Security Reader","10.1.2.8","AddMemberToRole",
+datetime(2025-01-05T00:55:00),"evil.attacker","alice","Helpdesk Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-05T00:57:00),"evil.attacker","alice","Cloud Application Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-05T00:59:00),"evil.attacker","alice","Application Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-05T01:02:00),"evil.attacker","alice","Privileged Role Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-05T01:03:30),"evil.attacker","alice","Global Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-04T11:00:00),"security.ops","rob","Security Reader","10.1.2.8","RemoveMemberFromRole",
+datetime(2025-01-04T11:02:00),"security.ops","rob","Helpdesk Administrator","10.1.2.8","AddMemberToRole",
+datetime(2025-01-04T02:10:00),"auto.bot","david","Helpdesk Administrator","104.88.1.2","AddMemberToRole",
+datetime(2025-01-04T02:12:00),"auto.bot","david","Application Administrator","104.88.1.2","AddMemberToRole",
+datetime(2025-01-04T02:14:00),"auto.bot","david","Cloud Application Administrator","104.88.1.2","AddMemberToRole",
+datetime(2025-01-06T23:50:00),"evil.attacker","david","Privileged Role Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-06T23:55:00),"evil.attacker","david","Global Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-06T14:00:00),"rx.bot","rob","Application Administrator","92.12.41.3","AddMemberToRole",
+datetime(2025-01-06T14:03:00),"rx.bot","rob","Cloud Application Administrator","92.12.41.3","AddMemberToRole",
+datetime(2025-01-06T14:05:00),"rx.bot","rob","Privileged Role Administrator","92.12.41.3","AddMemberToRole",
+datetime(2025-01-06T15:00:00),"it.helpdesk","mark","Helpdesk Administrator","10.1.1.5","AddMemberToRole",
+datetime(2025-01-07T01:00:00),"evil.attacker","mark","Cloud Application Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-07T01:02:00),"evil.attacker","mark","Application Administrator","202.77.88.10","AddMemberToRole",
+datetime(2025-01-07T01:04:00),"evil.attacker","mark","Global Administrator","202.77.88.10","AddMemberToRole"
+];
+AuditLogs
+|sort by Actor,Time asc 
+|serialize 
+| extend Prev_Time = iif(Actor==prev(Actor) and TargetUser == prev(TargetUser), prev(Time), datetime(null))
+| extend Prev_Role =  iif(Actor==prev(Actor)and TargetUser == prev(TargetUser), prev(RoleName),"")
+| extend PrevActor_IP =  iif(Actor==prev(Actor)and TargetUser == prev(TargetUser), prev(IP),"")
+| extend Prev_Operation =  iif(Actor==prev(Actor)and TargetUser == prev(TargetUser), prev(Operation),"")
+| extend Time_Diff = datetime_diff('minute', Time, Prev_Time)
+| extend OffHours = iff(datetime_part('hour',Time) < 9 or datetime_part('hour', Time)> 17, 1,0)
+| extend RoleLower = tolower(RoleName)
+| extend PrivLevel =
+    iff(RoleLower == "global administrator", 4,
+    iff(RoleLower == "privileged role administrator", 3,
+    iff(RoleLower == "cloud application administrator", 2,
+    iff(RoleLower == "application administrator", 1,
+    0))))
+| extend PrevPrivLevel =
+        iff(tolower(Prev_Role) == "global administrator", 4,
+        iff(tolower(Prev_Role) == "privileged role administrator", 3,
+        iff(tolower(Prev_Role) == "cloud application administrator", 2,
+        iff(tolower(Prev_Role) == "application administrator", 1, 0))))
+| extend Escalation = iif( Actor== prev(Actor) and TargetUser == prev(TargetUser) and PrivLevel> prev(PrivLevel), 1, 0)
+| where Time_Diff < 5
+      and PrivLevel > PrevPrivLevel
+      and PrivLevel > 1
+| project Time, Actor, TargetUser, RoleName,
+          Prev_Role, Time_Diff, OffHours,
+          PrivLevel, PrevPrivLevel, Escalation,
+          IP
