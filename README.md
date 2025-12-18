@@ -278,9 +278,82 @@ This represents a high-confidence push-bombing compromise, where the attacker su
 | **T1110** | Brute Force (MFA Push Abuse Variant)           |
 | **T1098** | Account Manipulation                           |
 
-
------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 🧠 KQL Query Output
 
 <img width="1452" height="152" alt="image" src="https://github.com/user-attachments/assets/992161cf-22b8-4be7-b4ad-dfb1df1f46d6" />
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# 6. Privilege Escalation Detection in Azure AD (KQL)
+
+This project detects suspicious or abnormal privilege escalation events inside Azure Active Directory using Kusto Query Language (KQL).
+Privilege escalation is one of the most critical indicators of identity compromise, especially when attackers gain access to high-privilege roles such as Global Administrator or Privileged Role Administrator.
+
+This type of anomaly is commonly used in SOC and Cloud Security environments to detect:
+
+Role abuse after account compromise
+
+Rapid elevation to high-impact admin roles
+
+Privilege escalation chains
+
+Off-hours administrative activity
+
+Attacker lateral movement across multiple accounts
+
+Automation scripts or bots assigning roles unexpectedly
+
+------------------------------------------------------------------------------------------------------------------------------
+
+📌 Detection Logic
+
+The logic for privilege escalation detection is based on reconstructing the full sequence of role assignments for each Actor → TargetUser pair:
+
+Sort role assignment events by Actor and Time
+
+Capture the previous role assigned to the same user
+
+Capture the previous operation time
+
+Compute the time difference between consecutive assignments
+
+Assign a privilege level to each Azure AD role:
+
+Global Administrator → 4
+
+Privileged Role Administrator → 3
+
+Cloud Application Administrator → 2
+
+Application Administrator → 1
+
+Flag the event if:
+
+The privilege level increased (PrivLevel > PrevPrivLevel)
+
+And the escalation occurred within 5 minutes
+
+And it happened outside business hours (optional)
+
+This pattern strongly indicates attacker-driven elevation rather than legitimate administrative workflow.
+
+----------------------------------------------------------------------------------------------------------------------
+
+🛡 MITRE ATT&CK Mapping
+
+| ID        | Technique                             |
+| --------- | ------------------------------------- |
+| **T1078** | Valid Accounts                        |
+| **T1098** | Account Manipulation                  |
+| **T1134** | Access Token Manipulation             |
+| **T1548** | Abuse Elevation Control Mechanisms    |
+| **T1068** | Exploitation for Privilege Escalation |
+
+--------------------------------------------------------------------------------------------------------------------------
+
+🧠 KQL Detection Output
+
+<img width="1840" height="427" alt="image" src="https://github.com/user-attachments/assets/ea46a733-7266-4d31-b924-3e32dab77b7f" />
+
